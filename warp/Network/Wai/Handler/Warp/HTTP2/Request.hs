@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Network.Wai.Handler.Warp.HTTP2.Request (
     toRequest
@@ -58,8 +59,11 @@ toRequest' ii settings addr ref (reqths,reqvt) bodylen body th secure = return r
       , requestHeaderReferer   = mReferer
       , requestHeaderUserAgent = mUserAgent
       }
-    headers = map (first tokenKey) ths
+    headers = map (first tokenKey) ths'
       where
+        ths' = case mScheme of
+            Just scheme -> (toToken "X-Scheme", scheme) : ths
+            _           -> ths
         ths = case mHost of
             Just _  -> reqths
             Nothing -> case mAuth of
@@ -69,6 +73,7 @@ toRequest' ii settings addr ref (reqths,reqvt) bodylen body th secure = return r
     !colonMethod = fromJust $ getHeaderValue tokenMethod reqvt -- MUST
     !mAuth = getHeaderValue tokenAuthority reqvt -- SHOULD
     !mHost = getHeaderValue tokenHost reqvt
+    !mScheme = getHeaderValue tokenScheme reqvt
     !mRange = getHeaderValue tokenRange reqvt
     !mReferer = getHeaderValue tokenReferer reqvt
     !mUserAgent = getHeaderValue tokenUserAgent reqvt
